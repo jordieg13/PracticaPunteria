@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juego de Círculos</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+    }
+    h1 {
+      margin: 0;
+    }
+    #score {
+      font-size: 1.2rem;
+    }
+    #gameArea {
+      width: 90vw;
+      max-width: 900px;
+      height: 70vh;
+      border: 2px solid #444;
+      border-radius: 12px;
+      position: relative;
+      background: #1c1c1c;
+      overflow: hidden;
+    }
+    .circle {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #00d4ff;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+      transition: transform 0.1s ease;
+    }
+    .circle:active {
+      transform: scale(0.9);
+    }
+  </style>
+</head>
+<body>
+  <h1>Practica tu puntería</h1>
+  <div id="score">Puntos: 0</div>
+  <div id="gameArea"></div>
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const scoreText = document.getElementById("score");
+  
+    let score = 0;
+    let misses = 0;
+    let gameOver = false;
+  
+    const circleSize = 70;
+    const maxMisses = 3;
+  
+    // NUEVO: temporizador
+    let timeLeft = 30;
+    let timerId = null;
+  
+    // Contenedor de controles (botón reiniciar)
+    const controls = document.createElement("div");
+    controls.style.marginTop = "12px";
+    controls.style.display = "flex";
+    controls.style.justifyContent = "center";
+  
+    const restartBtn = document.createElement("button");
+    restartBtn.textContent = "Reiniciar";
+    restartBtn.style.padding = "8px 14px";
+    restartBtn.style.border = "none";
+    restartBtn.style.borderRadius = "8px";
+    restartBtn.style.cursor = "pointer";
+    restartBtn.style.background = "#00d4ff";
+    restartBtn.style.color = "#111";
+    restartBtn.style.fontWeight = "bold";
+    restartBtn.style.display = "none"; // solo aparece en game over
+  
+    controls.appendChild(restartBtn);
+    gameArea.insertAdjacentElement("afterend", controls);
+  
+    function actualizarMarcador() {
+      scoreText.textContent = `Puntos: ${score} | Fallos: ${misses}/${maxMisses} | Tiempo: ${timeLeft}s`;
+    }
+  
+    function limpiarMensajes() {
+      const oldMsg = document.getElementById("endMessage");
+      if (oldMsg) oldMsg.remove();
+    }
+  
+    function crearCirculo() {
+      if (gameOver) return;
+  
+      const oldCircle = document.querySelector(".circle");
+      if (oldCircle) oldCircle.remove();
+  
+      const circle = document.createElement("div");
+      circle.classList.add("circle");
+  
+      const maxX = gameArea.clientWidth - circleSize;
+      const maxY = gameArea.clientHeight - circleSize;
+      const x = Math.random() * maxX;
+      const y = Math.random() * maxY;
+  
+      circle.style.left = `${x}px`;
+      circle.style.top = `${y}px`;
+  
+      circle.addEventListener("click", (e) => {
+        e.stopPropagation(); // evita contar fallo
+        if (gameOver) return;
+  
+        score++;
+        actualizarMarcador();
+        crearCirculo();
+      });
+  
+      gameArea.appendChild(circle);
+    }
+  
+    function detenerTemporizador() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+  
+    function iniciarTemporizador() {
+      detenerTemporizador(); // por seguridad, evita duplicados
+      timerId = setInterval(() => {
+        if (gameOver) return;
+  
+        timeLeft--;
+        actualizarMarcador();
+  
+        if (timeLeft <= 0) {
+          terminarJuego("Se acabó el tiempo");
+        }
+      }, 1000);
+    }
+  
+    function terminarJuego(motivo = "Has fallado 3 veces") {
+      if (gameOver) return;
+      gameOver = true;
+      detenerTemporizador();
+  
+      const circle = document.querySelector(".circle");
+      if (circle) circle.remove();
+  
+      const endMsg = document.createElement("div");
+      endMsg.id = "endMessage";
+      endMsg.textContent = `${motivo} - Puntos finales: ${score}`;
+      endMsg.style.marginTop = "10px";
+      endMsg.style.textAlign = "center";
+      endMsg.style.fontSize = "1.1rem";
+      endMsg.style.color = "#ff6b6b";
+  
+      gameArea.appendChild(endMsg);
+      restartBtn.style.display = "inline-block";
+    }
+  
+    function reiniciarJuego() {
+      score = 0;
+      misses = 0;
+      timeLeft = 30; // NUEVO: reset tiempo
+      gameOver = false;
+  
+      limpiarMensajes();
+      restartBtn.style.display = "none";
+  
+      actualizarMarcador();
+      crearCirculo();
+      iniciarTemporizador(); // NUEVO: arranca de nuevo
+    }
+  
+    // Clic en área vacía = fallo
+    gameArea.addEventListener("click", (e) => {
+      if (gameOver) return;
+  
+      if (!e.target.classList.contains("circle")) {
+        misses++;
+        actualizarMarcador();
+  
+        if (misses >= maxMisses) {
+          terminarJuego("Has fallado 3 veces");
+        }
+      }
+    });
+  
+    restartBtn.addEventListener("click", reiniciarJuego);
+  
+    actualizarMarcador();
+    crearCirculo();
+    iniciarTemporizador(); // NUEVO: iniciar al empezar
+  </script>
+</body>
+</html>
